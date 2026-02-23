@@ -9,6 +9,8 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   String selectedRole = 'Teacher';
+  // 1. Added state variable for password visibility
+  bool _isPasswordVisible = false;
 
   @override
   Widget build(BuildContext context) {
@@ -44,17 +46,29 @@ class _LoginPageState extends State<LoginPage> {
 
             const SizedBox(height: 40),
             _buildInputField("Email Address", "name@school.edu", icon: Icons.email_outlined),
-            _buildInputField("Password", "••••••••", icon: Icons.lock_outline, isPassword: true, showForgot: true),
+            
+            // 2. Pass the visibility state to the helper method
+            _buildInputField(
+              "Password", 
+              "••••••••", 
+              icon: Icons.lock_outline, 
+              isPassword: true, 
+              obscureText: !_isPasswordVisible, // Pass inverse of visibility
+              showForgot: true,
+              onToggleVisibility: () {
+                setState(() {
+                  _isPasswordVisible = !_isPasswordVisible;
+                });
+              },
+            ),
 
             const SizedBox(height: 24),
+            // ... (Rest of your button and role selection code remains the same)
             SizedBox(
               width: double.infinity,
               height: 56,
               child: ElevatedButton(
-                onPressed: () {
-                  // Navigate to Dashboard on Login
-                  Navigator.pushReplacementNamed(context, '/dashboard');
-                },
+                onPressed: () => Navigator.pushReplacementNamed(context, '/dashboard'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF4B56D2),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -86,15 +100,12 @@ class _LoginPageState extends State<LoginPage> {
             ),
 
             const SizedBox(height: 40),
-            // --- FIXED NAVIGATION SECTION ---
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const Text("Don't have an account? ", style: TextStyle(color: Colors.black54)),
                 GestureDetector(
-                  onTap: () {
-                    Navigator.pushNamed(context, '/signup');
-                  },
+                  onTap: () => Navigator.pushNamed(context, '/signup'),
                   child: const Text("Sign Up", style: TextStyle(color: Color(0xFF4B56D2), fontWeight: FontWeight.bold)),
                 ),
               ],
@@ -133,7 +144,16 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget _buildInputField(String label, String hint, {required IconData icon, bool isPassword = false, bool showForgot = false}) {
+  // 3. Updated helper method to handle toggling
+  Widget _buildInputField(
+    String label, 
+    String hint, {
+    required IconData icon, 
+    bool isPassword = false, 
+    bool obscureText = false,
+    bool showForgot = false,
+    VoidCallback? onToggleVisibility,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
       child: Column(
@@ -149,13 +169,23 @@ class _LoginPageState extends State<LoginPage> {
           ),
           const SizedBox(height: 8),
           TextField(
-            obscureText: isPassword,
+            obscureText: isPassword ? obscureText : false,
             decoration: InputDecoration(
               hintText: hint,
               prefixIcon: Icon(icon, color: Colors.grey, size: 20),
               filled: true,
               fillColor: Colors.white,
-              suffixIcon: isPassword ? const Icon(Icons.visibility_outlined, color: Colors.grey, size: 20) : null,
+              // 4. Wrap suffixIcon in an IconButton
+              suffixIcon: isPassword 
+                ? IconButton(
+                    icon: Icon(
+                      obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      color: Colors.grey, 
+                      size: 20,
+                    ),
+                    onPressed: onToggleVisibility,
+                  ) 
+                : null,
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
               contentPadding: const EdgeInsets.symmetric(vertical: 18),
             ),

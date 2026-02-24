@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:s76_0126_team01_flutter_firebase_coachhub/features/auth/presentation/pages/login_page.dart';
 import 'package:s76_0126_team01_flutter_firebase_coachhub/features/auth/presentation/pages/onboarding_page.dart';
+import 'package:s76_0126_team01_flutter_firebase_coachhub/features/home/presentation/pages/home_page.dart';
 
 void main() {
   runApp(const CoachubApp());
@@ -15,16 +16,18 @@ class CoachubApp extends StatelessWidget {
       title: 'Coachub',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primaryColor: const Color(0xFF4B56D2),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF4B56D2),
+          brightness: Brightness.light,
+        ),
         useMaterial3: true,
-        fontFamily: 'Inter', // If you have added Inter to pubspec.yaml
+        fontFamily: 'Inter',
       ),
-      // Define the starting page
-      initialRoute: '/',
+      initialRoute: '/dashboard', // TODO: revert to '/' before release
       routes: {
         '/': (context) => const LoginPage(),
         '/signup': (context) => const SignUpPage(),
-        '/dashboard': (context) => const LoginPage(),
+        '/dashboard': (context) => const TeacherDashboardPage(),
       },
     );
   }

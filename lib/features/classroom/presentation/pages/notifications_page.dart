@@ -8,7 +8,6 @@ class NotificationsPage extends StatefulWidget {
 }
 
 class _NotificationsPageState extends State<NotificationsPage> {
-  final int _currentIndex = 0; // Defaulting to home for the bottom nav
   int _selectedFilterIndex = 0; // 0: All, 1: Assignments, 2: Grades, etc.
 
   // Design Colors

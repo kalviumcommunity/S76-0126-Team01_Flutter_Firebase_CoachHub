@@ -11,7 +11,6 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  String selectedRole = 'Teacher';
   bool _isPasswordVisible = false;
   bool _isLoading = false;
   final TextEditingController emailController = TextEditingController();
@@ -149,30 +148,14 @@ class _LoginPageState extends State<LoginPage> {
                   shadowColor: const Color(0xFF4B56D2).withValues(alpha: 0.4),
                 ),
                 child: _isLoading 
-                  ? const CircularProgressIndicator(color: Colors.white)
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                    )
                   : const Text('Login to Account', 
                       style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
               ),
-            ),
-            const SizedBox(height: 40),
-            Row(
-              children: [
-                const Expanded(child: Divider()),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text(' LOG IN AS', 
-                    style: TextStyle(color: Colors.grey[400], fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1)),
-                ),
-                const Expanded(child: Divider()),
-              ],
-            ),
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(child: _buildRoleMiniCard('Teacher', 'Manage Class', Icons.record_voice_over_outlined)),
-                const SizedBox(width: 16),
-                Expanded(child: _buildRoleMiniCard('Student', 'Start Learning', Icons.menu_book_outlined)),
-              ],
             ),
             const SizedBox(height: 40),
             Row(
@@ -208,25 +191,23 @@ class _LoginPageState extends State<LoginPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (showForgot)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  label,
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              ),
+              if (showForgot)
+                GestureDetector(
+                  onTap: () {},
+                  child: const Text(
+                    'Forgot Password?',
+                    style: TextStyle(color: Color(0xFF4B56D2), fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
                 ),
-                TextButton(
-                  onPressed: () {},
-                  child: const Text('Forgot Password?'),
-                ),
-              ],
-            )
-          else
-            Text(
-              label,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-            ),
+            ],
+          ),
           const SizedBox(height: 8),
           TextField(
             controller: controller,
@@ -234,12 +215,13 @@ class _LoginPageState extends State<LoginPage> {
             obscureText: isPassword ? obscureText : false,
             decoration: InputDecoration(
               hintText: hint,
-              prefixIcon: Icon(icon),
+              prefixIcon: Icon(icon, size: 20),
               suffixIcon: isPassword
                   ? IconButton(
                       onPressed: onToggleVisibility,
                       icon: Icon(
                         obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                        size: 20,
                       ),
                     )
                   : null,
@@ -260,39 +242,6 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildRoleMiniCard(String role, String subtitle, IconData icon) {
-    final bool isSelected = selectedRole == role;
-
-    return GestureDetector(
-      onTap: () => setState(() => selectedRole = role),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFE8EAF6) : Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isSelected ? const Color(0xFF4B56D2) : const Color(0xFFE0E0E0),
-          ),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: const Color(0xFF4B56D2)),
-            const SizedBox(height: 8),
-            Text(
-              role,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: TextStyle(color: Colors.grey[600], fontSize: 12),
-            ),
-          ],
-        ),
       ),
     );
   }

@@ -8,8 +8,6 @@ class AssignmentDetailPage extends StatefulWidget {
 }
 
 class _AssignmentDetailPageState extends State<AssignmentDetailPage> {
-  final int _currentIndex = 1; // 1 = Tasks tab
-
   // Design Colors
   final Color _primaryBlue = const Color(0xFF4354B4);
   final Color _textDark = const Color(0xFF1A1A1A);

@@ -8,7 +8,6 @@ class StudentTasksPage extends StatefulWidget {
 }
 
 class _StudentTasksPageState extends State<StudentTasksPage> {
-  int _currentIndex = 1; // 1 represents the "Tasks" tab
   bool _isPendingSelected = true;
 
   // Colors based on the UI design

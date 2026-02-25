@@ -8,8 +8,6 @@ class StudentHomePage extends StatefulWidget {
 }
 
 class _StudentHomePageState extends State<StudentHomePage> {
-  int _currentIndex = 0;
-
   // Colors based on the UI design
   final Color _bgColor = const Color(0xFFF8F9FB);
   final Color _primaryBlue = const Color(0xFF4354B4);

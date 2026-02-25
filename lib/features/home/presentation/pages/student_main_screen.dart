@@ -6,7 +6,7 @@ import 'package:s76_0126_team01_flutter_firebase_coachhub/features/classroom/pre
 import 'package:s76_0126_team01_flutter_firebase_coachhub/features/classroom/presentation/pages/student_courses_page.dart';
 
 class StudentMainScreen extends StatefulWidget {
-  const StudentMainScreen({Key? key}) : super(key: key);
+  const StudentMainScreen({super.key});
 
   @override
   State<StudentMainScreen> createState() => _StudentMainScreenState();
@@ -39,7 +39,7 @@ class _StudentMainScreenState extends State<StudentMainScreen> {
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, -5),
             ),

@@ -8,7 +8,6 @@ class StudentCoursesPage extends StatefulWidget {
 }
 
 class _StudentCoursesPageState extends State<StudentCoursesPage> {
-  final int _currentIndex = 2; // 2 = Courses tab
   int _selectedTabIndex = 0; // 0: Ongoing, 1: Completed, 2: Wishlist
 
   // Design Colors

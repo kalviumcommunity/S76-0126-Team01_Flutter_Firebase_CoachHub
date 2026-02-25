@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart'; 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_options.dart';
 
 // Import all your pages
 import 'package:s76_0126_team01_flutter_firebase_coachhub/features/auth/presentation/pages/login_page.dart';
 import 'package:s76_0126_team01_flutter_firebase_coachhub/features/auth/presentation/pages/signup_page.dart';
 import 'package:s76_0126_team01_flutter_firebase_coachhub/features/auth/presentation/pages/onboarding_page.dart';
+import 'package:s76_0126_team01_flutter_firebase_coachhub/features/home/presentation/pages/home_page.dart';
+import 'package:s76_0126_team01_flutter_firebase_coachhub/features/home/presentation/pages/student_main_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,8 +40,8 @@ class CoachubApp extends StatelessWidget {
         '/login': (context) => const LoginPage(),
         '/signup': (context) => const SignUpPage(),
         '/onboarding': (context) => const OnboardingPage(),
-        '/teacher_home': (context) => const _TeacherHomePlaceholderPage(),
-        '/student_home': (context) => const _StudentHomePlaceholderPage(),
+        '/teacher_home': (context) => const TeacherDashboardPage(),
+        '/student_home': (context) => const StudentMainScreen(),
       },
     );
   }
@@ -54,42 +57,41 @@ class AuthCheck extends StatelessWidget {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.active) {
-          User? user = snapshot.data;
-          if (user == null) {
-            return const OnboardingPage();
-          } else {
-            // Returns LoginPage which handles the role-fetching logic
-            return const LoginPage(); 
-          }
+        if (snapshot.connectionState != ConnectionState.active) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
-        return const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
+
+        final user = snapshot.data;
+        if (user == null) {
+          return const OnboardingPage();
+        }
+
+        return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+          future: FirebaseFirestore.instance.collection('users').doc(user.uid).get(),
+          builder: (context, roleSnapshot) {
+            if (roleSnapshot.connectionState != ConnectionState.done) {
+              return const Scaffold(
+                body: Center(child: CircularProgressIndicator()),
+              );
+            }
+
+            if (!roleSnapshot.hasData || !roleSnapshot.data!.exists) {
+              return const LoginPage();
+            }
+
+            final role = (roleSnapshot.data!.data()?['role'] as String?) ?? '';
+            if (role == 'Teacher') {
+              return const TeacherDashboardPage();
+            }
+            if (role == 'Student') {
+              return const StudentMainScreen();
+            }
+            return const LoginPage();
+          },
         );
       },
-    );
-  }
-}
-
-// Placeholder pages for testing navigation
-class _TeacherHomePlaceholderPage extends StatelessWidget {
-  const _TeacherHomePlaceholderPage();
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Teacher Dashboard')),
-      body: const Center(child: Text('Welcome, Teacher!')),
-    );
-  }
-}
-
-class _StudentHomePlaceholderPage extends StatelessWidget {
-  const _StudentHomePlaceholderPage();
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Student Dashboard')),
-      body: const Center(child: Text('Welcome, Student!')),
     );
   }
 }

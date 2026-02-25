@@ -1,4 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:s76_0126_team01_flutter_firebase_coachhub/features/auth/data/auth_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -9,8 +12,78 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   String selectedRole = 'Teacher';
-  // 1. Added state variable for password visibility
   bool _isPasswordVisible = false;
+  bool _isLoading = false;
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleLogin() async {
+    if (emailController.text.isEmpty || passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill in all fields')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    final result = await AuthService().login(
+      emailController.text.trim(),
+      passwordController.text,
+    );
+
+    if (!mounted) return;
+
+    if (result == 'success') {
+      final user = FirebaseAuth.instance.currentUser;
+      
+      try {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user!.uid)
+            .get();
+
+        if (!mounted) return;
+
+        if (userDoc.exists) {
+          final role = (userDoc.data()?['role'] as String?) ?? '';
+
+          if (role == 'Teacher') {
+            Navigator.pushReplacementNamed(context, '/teacher_home');
+          } else if (role == 'Student') {
+            Navigator.pushReplacementNamed(context, '/student_home');
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('User role not recognized.')),
+            );
+          }
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('User profile not found in database.')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error fetching profile: $e')),
+          );
+        }
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result ?? 'Login failed')),
+      );
+    }
+
+    if (mounted) setState(() => _isLoading = false);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,59 +106,62 @@ class _LoginPageState extends State<LoginPage> {
                     child: const Icon(Icons.school, color: Color(0xFF4B56D2), size: 40),
                   ),
                   const SizedBox(height: 16),
-                  const Text("COACHUB", style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF4B56D2), letterSpacing: 1.5)),
-                  const Text("Empowering the next generation", style: TextStyle(color: Colors.grey, fontSize: 13)),
+                  const Text('COACHUB', 
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF4B56D2), letterSpacing: 1.5)),
+                  const Text('Empowering the next generation', style: TextStyle(color: Colors.grey, fontSize: 13)),
                 ],
               ),
             ),
-            
             const SizedBox(height: 48),
-            const Text("Welcome Back", style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+            const Text('Welcome Back', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            const Text("Please enter your details to login", style: TextStyle(color: Colors.grey, fontSize: 15)),
-
+            const Text('Please enter your details to login', style: TextStyle(color: Colors.grey, fontSize: 15)),
             const SizedBox(height: 40),
-            _buildInputField("Email Address", "name@school.edu", icon: Icons.email_outlined),
-            
-            // 2. Pass the visibility state to the helper method
             _buildInputField(
-              "Password", 
-              "••••••••", 
-              icon: Icons.lock_outline, 
-              isPassword: true, 
-              obscureText: !_isPasswordVisible, // Pass inverse of visibility
+              'Email Address',
+              'name@school.edu',
+              icon: Icons.email_outlined,
+              controller: emailController,
+              keyboardType: TextInputType.emailAddress,
+            ),
+            _buildInputField(
+              'Password',
+              '********',
+              icon: Icons.lock_outline,
+              isPassword: true,
+              obscureText: !_isPasswordVisible,
               showForgot: true,
+              controller: passwordController,
               onToggleVisibility: () {
-                setState(() {
-                  _isPasswordVisible = !_isPasswordVisible;
-                });
+                setState(() => _isPasswordVisible = !_isPasswordVisible);
               },
             ),
-
             const SizedBox(height: 24),
-            // ... (Rest of your button and role selection code remains the same)
             SizedBox(
               width: double.infinity,
               height: 56,
               child: ElevatedButton(
-                onPressed: () => Navigator.pushReplacementNamed(context, '/dashboard'),
+                onPressed: _isLoading ? null : _handleLogin,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF4B56D2),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   elevation: 4,
                   shadowColor: const Color(0xFF4B56D2).withValues(alpha: 0.4),
                 ),
-                child: const Text("Login to Account", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                child: _isLoading 
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : const Text('Login to Account', 
+                      style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
               ),
             ),
-
             const SizedBox(height: 40),
             Row(
               children: [
                 const Expanded(child: Divider()),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text("SELECT YOUR ROLE", style: TextStyle(color: Colors.grey[400], fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                  child: Text(' LOG IN AS', 
+                    style: TextStyle(color: Colors.grey[400], fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1)),
                 ),
                 const Expanded(child: Divider()),
               ],
@@ -98,15 +174,14 @@ class _LoginPageState extends State<LoginPage> {
                 Expanded(child: _buildRoleMiniCard('Student', 'Start Learning', Icons.menu_book_outlined)),
               ],
             ),
-
             const SizedBox(height: 40),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text("Don't have an account? ", style: TextStyle(color: Colors.black54)),
+                const Text('Don\'t have an account? ', style: TextStyle(color: Colors.black54)),
                 GestureDetector(
                   onTap: () => Navigator.pushNamed(context, '/signup'),
-                  child: const Text("Sign Up", style: TextStyle(color: Color(0xFF4B56D2), fontWeight: FontWeight.bold)),
+                  child: const Text('Sign Up', style: TextStyle(color: Color(0xFF4B56D2), fontWeight: FontWeight.bold)),
                 ),
               ],
             ),
@@ -117,80 +192,107 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget _buildRoleMiniCard(String role, String subtitle, IconData icon) {
-    bool isSelected = selectedRole == role;
-    return GestureDetector(
-      onTap: () => setState(() => selectedRole = role),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isSelected ? const Color(0xFF4B56D2) : Colors.transparent, width: 2),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))],
-        ),
-        child: Column(
-          children: [
-            CircleAvatar(
-              backgroundColor: isSelected ? const Color(0xFFE8EAF6) : const Color(0xFFF5F5F5),
-              child: Icon(icon, color: isSelected ? const Color(0xFF4B56D2) : Colors.grey, size: 20),
-            ),
-            const SizedBox(height: 12),
-            Text(role, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-            Text(subtitle, style: TextStyle(color: Colors.grey[400], fontSize: 10)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // 3. Updated helper method to handle toggling
   Widget _buildInputField(
-    String label, 
+    String label,
     String hint, {
-    required IconData icon, 
-    bool isPassword = false, 
+    required IconData icon,
+    required TextEditingController controller,
+    TextInputType keyboardType = TextInputType.text,
+    bool isPassword = false,
     bool obscureText = false,
     bool showForgot = false,
     VoidCallback? onToggleVisibility,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.only(bottom: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-              if (showForgot)
-                Text("Forgot?", style: TextStyle(color: Colors.blue[800], fontSize: 12, fontWeight: FontWeight.bold)),
-            ],
-          ),
+          if (showForgot)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                ),
+                TextButton(
+                  onPressed: () {},
+                  child: const Text('Forgot Password?'),
+                ),
+              ],
+            )
+          else
+            Text(
+              label,
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            ),
           const SizedBox(height: 8),
           TextField(
+            controller: controller,
+            keyboardType: keyboardType,
             obscureText: isPassword ? obscureText : false,
             decoration: InputDecoration(
               hintText: hint,
-              prefixIcon: Icon(icon, color: Colors.grey, size: 20),
+              prefixIcon: Icon(icon),
+              suffixIcon: isPassword
+                  ? IconButton(
+                      onPressed: onToggleVisibility,
+                      icon: Icon(
+                        obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      ),
+                    )
+                  : null,
               filled: true,
               fillColor: Colors.white,
-              // 4. Wrap suffixIcon in an IconButton
-              suffixIcon: isPassword 
-                ? IconButton(
-                    icon: Icon(
-                      obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                      color: Colors.grey, 
-                      size: 20,
-                    ),
-                    onPressed: onToggleVisibility,
-                  ) 
-                : null,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-              contentPadding: const EdgeInsets.symmetric(vertical: 18),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: const BorderSide(color: Color(0xFF4B56D2)),
+              ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildRoleMiniCard(String role, String subtitle, IconData icon) {
+    final bool isSelected = selectedRole == role;
+
+    return GestureDetector(
+      onTap: () => setState(() => selectedRole = role),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFE8EAF6) : Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF4B56D2) : const Color(0xFFE0E0E0),
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: const Color(0xFF4B56D2)),
+            const SizedBox(height: 8),
+            Text(
+              role,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: TextStyle(color: Colors.grey[600], fontSize: 12),
+            ),
+          ],
+        ),
       ),
     );
   }

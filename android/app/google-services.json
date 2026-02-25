@@ -1,0 +1,82 @@
+{
+  "project_info": {
+    "project_number": "1058278723905",
+    "project_id": "coach-hub-11",
+    "storage_bucket": "coach-hub-11.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1058278723905:android:5255dc494e33a91d57d1c0",
+        "android_client_info": {
+          "package_name": "com.example.demo_coachub"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1058278723905-5jh860hqb67tgsirs65c8g2bkko87b7a.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCxpbU4Xqj43RTLL9892wmIvW6pRAqTx9w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1058278723905-5jh860hqb67tgsirs65c8g2bkko87b7a.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1058278723905-dm5mpou823pb9a737n33c7ltrlm4atsd.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.s760126Team01FlutterFirebaseCoachhub"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1058278723905:android:ae3b3d0f575b368157d1c0",
+        "android_client_info": {
+          "package_name": "com.example.s76_0126_team01_flutter_firebase_coachhub"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1058278723905-5jh860hqb67tgsirs65c8g2bkko87b7a.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCxpbU4Xqj43RTLL9892wmIvW6pRAqTx9w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1058278723905-5jh860hqb67tgsirs65c8g2bkko87b7a.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1058278723905-dm5mpou823pb9a737n33c7ltrlm4atsd.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.s760126Team01FlutterFirebaseCoachhub"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:s76_0126_team01_flutter_firebase_coachhub/features/auth/presentation/widgets/teacher_bottom_nav.dart';
 import 'package:s76_0126_team01_flutter_firebase_coachhub/features/home/presentation/pages/teacher_home_page.dart';
 import 'package:s76_0126_team01_flutter_firebase_coachhub/features/progress/presentation/pages/teacher_progress_page.dart';
-import 'package:s76_0126_team01_flutter_firebase_coachhub/features/profile/presentation/pages/settings_page.dart';
+import 'package:s76_0126_team01_flutter_firebase_coachhub/features/profile/presentation/pages/profile_page.dart';
 import 'package:s76_0126_team01_flutter_firebase_coachhub/features/classroom/presentation/pages/create_class_page.dart';
 
 class TeacherDashboardPage extends StatefulWidget {
@@ -19,7 +19,7 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage> {
     TeacherHomePage(),
     _ClassesTab(),
     TeacherProgressPage(),
-    SettingsPage(),
+    ProfilePage(),
   ];
 
   @override

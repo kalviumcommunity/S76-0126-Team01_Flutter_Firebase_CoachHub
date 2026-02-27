@@ -1,6 +1,11 @@
+import 'dart:async';
+import 'dart:typed_data';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:s76_0126_team01_flutter_firebase_coachhub/features/auth/data/auth_service.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -13,98 +18,66 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
+  final ImagePicker _picker = ImagePicker();
 
-  bool pushNotifications = true;
-  bool emailUpdates = false;
-  bool _isLoading = true;
-  bool _isSaving = false;
+  bool _isUpdating = false;
+  bool _isUploadingPhoto = false;
+  double _uploadProgress = 0;
+  Uint8List? _localPreviewBytes;
 
-  String _name = '';
-  String _email = '';
-  String _role = '';
-
-  @override
-  void initState() {
-    super.initState();
-    _loadProfile();
-  }
-
-  Future<void> _loadProfile() async {
-    final user = _auth.currentUser;
-    if (user == null) {
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-      return;
-    }
-
-    try {
-      final doc = await _db.collection('users').doc(user.uid).get();
-      final data = doc.data();
-      if (!mounted) return;
-
-      setState(() {
-        _name = (data?['name'] as String?)?.trim().isNotEmpty == true
-            ? data!['name'] as String
-            : (user.displayName ?? 'User');
-        _email = (data?['email'] as String?)?.trim().isNotEmpty == true
-            ? data!['email'] as String
-            : (user.email ?? '');
-        _role = (data?['role'] as String?)?.trim().isNotEmpty == true
-            ? data!['role'] as String
-            : 'Student';
-        pushNotifications = data?['pushNotifications'] as bool? ?? true;
-        emailUpdates = data?['emailUpdates'] as bool? ?? false;
-        _isLoading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to load profile: $e')),
-      );
+  Future<void> _handleLogout() async {
+    await AuthService().signOut();
+    if (mounted) {
+      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
     }
   }
 
-  Future<void> _saveUserFields(Map<String, dynamic> fields) async {
+  Future<void> _updateUserFields(Map<String, dynamic> updates) async {
     final user = _auth.currentUser;
     if (user == null) return;
 
-    setState(() => _isSaving = true);
+    setState(() => _isUpdating = true);
     try {
-      await _db.collection('users').doc(user.uid).set(fields, SetOptions(merge: true));
+      updates['updatedAt'] = FieldValue.serverTimestamp();
+      await _db.collection('users').doc(user.uid).set(updates, SetOptions(merge: true));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to save settings: $e')),
+        SnackBar(content: Text('Update failed: $e')),
       );
     } finally {
-      if (mounted) {
-        setState(() => _isSaving = false);
-      }
+      if (mounted) setState(() => _isUpdating = false);
     }
   }
 
-  Future<void> _updatePreference({
-    required String field,
-    required bool value,
-    required VoidCallback updateLocal,
+  Future<void> _showEditProfileDialog({
+    required String currentName,
+    required String currentEmail,
   }) async {
-    updateLocal();
-    await _saveUserFields({field: value});
-  }
+    final nameController = TextEditingController(text: currentName);
+    final emailController = TextEditingController(text: currentEmail);
 
-  Future<void> _showEditNameDialog() async {
-    final controller = TextEditingController(text: _name);
-    final updatedName = await showDialog<String>(
+    final result = await showDialog<Map<String, String>>(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Edit Full Name'),
-          content: TextField(
-            controller: controller,
-            textCapitalization: TextCapitalization.words,
-            decoration: const InputDecoration(hintText: 'Enter your full name'),
-            autofocus: true,
+          title: const Text('Edit Profile'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                textCapitalization: TextCapitalization.words,
+                decoration: const InputDecoration(labelText: 'Full Name'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: emailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(labelText: 'Email'),
+              ),
+            ],
           ),
           actions: [
             TextButton(
@@ -113,9 +86,12 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             ElevatedButton(
               onPressed: () {
-                final value = controller.text.trim();
-                if (value.isEmpty) return;
-                Navigator.pop(context, value);
+                final name = nameController.text.trim();
+                final email = emailController.text.trim();
+                if (name.isEmpty || email.isEmpty || !email.contains('@')) {
+                  return;
+                }
+                Navigator.pop(context, {'name': name, 'email': email});
               },
               child: const Text('Save'),
             ),
@@ -124,23 +100,34 @@ class _SettingsPageState extends State<SettingsPage> {
       },
     );
 
-    if (!mounted || updatedName == null || updatedName == _name) {
-      return;
-    }
+    if (!mounted || result == null) return;
+    final user = _auth.currentUser;
+    if (user == null) return;
 
-    setState(() => _name = updatedName);
-    await _saveUserFields({'name': updatedName});
+    final newName = result['name']!;
+    final newEmail = result['email']!;
+
+    await _updateUserFields({'name': newName});
+
+    if (newEmail != currentEmail) {
+      try {
+        await user.verifyBeforeUpdateEmail(newEmail);
+        await _updateUserFields({'email': newEmail});
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Verification email sent to $newEmail')),
+        );
+      } on FirebaseAuthException catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message ?? 'Could not update email right now.')),
+        );
+      }
+    }
   }
 
-  Future<void> _handleChangePassword() async {
-    final email = _email.trim().isNotEmpty ? _email.trim() : _auth.currentUser?.email;
-    if (email == null || email.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No email found for this account.')),
-      );
-      return;
-    }
-
+  Future<void> _sendPasswordReset(String email) async {
+    if (email.isEmpty) return;
     try {
       await _auth.sendPasswordResetEmail(email: email);
       if (!mounted) return;
@@ -155,26 +142,111 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  Future<void> _handleLogout() async {
+  Future<void> _pickAndUploadProfilePhoto() async {
+    final user = _auth.currentUser;
+    if (user == null || _isUploadingPhoto) return;
+
     try {
-      await AuthService().signOut();
+      final pickedFile = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 65,
+        maxWidth: 700,
+      );
+      if (pickedFile == null) return;
+
+      setState(() {
+        _isUploadingPhoto = true;
+        _uploadProgress = 0;
+      });
+
+      final bytes = await pickedFile.readAsBytes();
       if (mounted) {
-        Navigator.pushReplacementNamed(context, '/login');
+        setState(() => _localPreviewBytes = bytes);
       }
+      final path = 'profile_photos/${user.uid}/${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final ref = _storage.ref().child(path);
+      final photoVersion = DateTime.now().millisecondsSinceEpoch;
+      final metadata = SettableMetadata(
+        contentType: pickedFile.mimeType ?? 'image/jpeg',
+        cacheControl: 'public,max-age=60',
+      );
+
+      Future<void> runUploadTask() async {
+        final uploadTask = ref.putData(bytes, metadata);
+        final sub = uploadTask.snapshotEvents.listen((snapshot) {
+          if (!mounted) return;
+          final total = snapshot.totalBytes;
+          if (total > 0) {
+            setState(() => _uploadProgress = snapshot.bytesTransferred / total);
+          }
+        }, onError: (_) {});
+
+        try {
+          // Allow slower networks; avoid failing too early.
+          await uploadTask.timeout(const Duration(minutes: 3));
+        } finally {
+          await sub.cancel();
+        }
+      }
+
+      try {
+        await runUploadTask();
+      } on TimeoutException {
+        // Retry once on transient network stalls.
+        await runUploadTask();
+      }
+
+      final photoUrl = await ref.getDownloadURL().timeout(const Duration(seconds: 30));
+
+      await _db.collection('users').doc(user.uid).set({
+        'photoUrl': photoUrl,
+        'photoVersion': photoVersion,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      await user.updatePhotoURL(photoUrl);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Profile picture updated')),
+      );
+    } on FirebaseException catch (e) {
+      if (!mounted) return;
+      final message = e.message ?? e.code;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Upload failed: $message')),
+      );
+    } on TimeoutException {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Upload not progressing. Check internet and Firebase Storage rules/bucket setup.',
+          ),
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Logout failed: $e')),
+        SnackBar(content: Text('Failed to upload photo: $e')),
       );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploadingPhoto = false;
+          _uploadProgress = 0;
+          _localPreviewBytes = null;
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
+    final user = _auth.currentUser;
+    if (user == null) {
       return const Scaffold(
-        backgroundColor: Color(0xFFF8F9FA),
-        body: Center(child: CircularProgressIndicator()),
+        body: Center(child: Text('Please login to open settings.')),
       );
     }
 
@@ -193,146 +265,186 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24.0),
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
-            Center(
-              child: Column(
-                children: [
-                  Stack(
+      body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+        stream: _db.collection('users').doc(user.uid).snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final data = snapshot.data?.data() ?? <String, dynamic>{};
+          final name = (data['name'] as String?)?.trim().isNotEmpty == true ? data['name'] as String : 'User';
+          final email = (data['email'] as String?)?.trim().isNotEmpty == true
+              ? data['email'] as String
+              : (user.email ?? 'No Email');
+          final role = (data['role'] as String?)?.trim().isNotEmpty == true ? data['role'] as String : 'Member';
+          final pushNotifications = data['pushNotifications'] as bool? ?? true;
+          final emailUpdates = data['emailUpdates'] as bool? ?? false;
+          final photoUrl = (data['photoUrl'] as String?) ?? '';
+          final photoVersion = data['photoVersion'] as int? ?? 0;
+          final photoUrlWithVersion =
+              photoUrl.isNotEmpty ? '$photoUrl${photoUrl.contains('?') ? '&' : '?'}v=$photoVersion' : '';
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: Column(
+              children: [
+                const SizedBox(height: 20),
+                Center(
+                  child: Column(
                     children: [
-                      Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: const Color(0xFFEBD4C3),
-                          border: Border.all(color: Colors.white, width: 4),
-                        ),
-                        child: const Icon(Icons.person, size: 60, color: Colors.white),
-                      ),
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: GestureDetector(
-                          onTap: _isSaving ? null : _showEditNameDialog,
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF4B56D2),
+                      Stack(
+                        children: [
+                          Container(
+                            width: 120,
+                            height: 120,
+                            decoration: BoxDecoration(
                               shape: BoxShape.circle,
+                              color: const Color(0xFFEBD4C3),
+                              border: Border.all(color: Colors.white, width: 4),
                             ),
-                            child: const Icon(Icons.edit, color: Colors.white, size: 18),
+                            child: ClipOval(
+                              child: _localPreviewBytes != null
+                                  ? Image.memory(
+                                      _localPreviewBytes!,
+                                      width: 120,
+                                      height: 120,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : photoUrlWithVersion.isNotEmpty
+                                      ? Image.network(
+                                      photoUrlWithVersion,
+                                      width: 120,
+                                      height: 120,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) => const Icon(
+                                        Icons.person,
+                                        size: 60,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                      : const Icon(Icons.person, size: 60, color: Colors.white),
+                            ),
+                          ),
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: GestureDetector(
+                              onTap: _isUpdating || _isUploadingPhoto ? null : _pickAndUploadProfilePhoto,
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFF4B56D2),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: _isUploadingPhoto
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    : const Icon(Icons.camera_alt, color: Colors.white, size: 18),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (_isUploadingPhoto)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 10),
+                          child: Text(
+                            '${(_uploadProgress * 100).toStringAsFixed(0)}% uploading...',
+                            style: const TextStyle(fontSize: 12, color: Colors.grey),
                           ),
                         ),
+                      const SizedBox(height: 16),
+                      Text(name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                      Text(
+                        role,
+                        style: const TextStyle(color: Color(0xFF4B56D2), fontWeight: FontWeight.w600),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    _name.isEmpty ? 'User' : _name,
-                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 40),
+                _buildSectionHeader('ACCOUNT INFORMATION'),
+                _buildCardWrapper([
+                  _buildInfoTile(
+                    Icons.person_outline,
+                    'FULL NAME',
+                    name,
+                    onTap: () => _showEditProfileDialog(currentName: name, currentEmail: email),
                   ),
-                  Text(
-                    'Role: ${_role.isEmpty ? 'Student' : _role}',
-                    style: const TextStyle(color: Color(0xFF4B56D2), fontWeight: FontWeight.w600),
+                  _buildDivider(),
+                  _buildInfoTile(Icons.email_outlined, 'EMAIL ADDRESS', email),
+                  _buildDivider(),
+                  _buildInfoTile(Icons.school_outlined, 'ASSIGNED ROLE', role, isVerified: true),
+                ]),
+                const SizedBox(height: 32),
+                _buildSectionHeader('PREFERENCES'),
+                _buildCardWrapper([
+                  _buildSwitchTile(
+                    Icons.notifications_none,
+                    'Push Notifications',
+                    pushNotifications,
+                    (val) => _updateUserFields({'pushNotifications': val}),
+                    iconBg: const Color(0xFFFFF7E6),
+                    iconColor: Colors.orange,
                   ),
-                ],
-              ),
+                  _buildDivider(),
+                  _buildSwitchTile(
+                    Icons.alternate_email,
+                    'Email Updates',
+                    emailUpdates,
+                    (val) => _updateUserFields({'emailUpdates': val}),
+                    iconBg: const Color(0xFFE8EAF6),
+                    iconColor: const Color(0xFF4B56D2),
+                  ),
+                  _buildDivider(),
+                  _buildNavTile(
+                    Icons.lock_outline,
+                    'Change Password',
+                    onTap: () => _sendPasswordReset(email),
+                    iconBg: const Color(0xFFE6F7ED),
+                    iconColor: Colors.green,
+                  ),
+                ]),
+                const SizedBox(height: 48),
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: OutlinedButton.icon(
+                    onPressed: _handleLogout,
+                    icon: const Icon(Icons.logout, color: Color(0xFFE57373)),
+                    label: const Text(
+                      'Logout',
+                      style: TextStyle(color: Color(0xFFE57373), fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      side: const BorderSide(color: Color(0xFFFEE7E7)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'COACHING PRO V2.4.0',
+                  style: TextStyle(color: Colors.grey, fontSize: 10, letterSpacing: 1.2),
+                ),
+                const SizedBox(height: 30),
+              ],
             ),
-            const SizedBox(height: 40),
-            _buildSectionTitle('ACCOUNT INFORMATION'),
-            _buildInfoCard([
-              _buildInfoTile(
-                Icons.person_outline,
-                'FULL NAME',
-                _name.isEmpty ? 'Not set' : _name,
-                onTap: _showEditNameDialog,
-              ),
-              _buildDivider(),
-              _buildInfoTile(
-                Icons.email_outlined,
-                'EMAIL ADDRESS',
-                _email.isEmpty ? 'Not set' : _email,
-              ),
-              _buildDivider(),
-              _buildInfoTile(
-                Icons.school_outlined,
-                'ASSIGNED ROLE',
-                _role.isEmpty ? 'Student' : _role,
-                isVerified: true,
-              ),
-            ]),
-            const SizedBox(height: 32),
-            _buildSectionTitle('PREFERENCES'),
-            _buildInfoCard([
-              _buildSwitchTile(
-                Icons.notifications_none,
-                'Push Notifications',
-                pushNotifications,
-                (val) => _updatePreference(
-                  field: 'pushNotifications',
-                  value: val,
-                  updateLocal: () => setState(() => pushNotifications = val),
-                ),
-                iconBg: const Color(0xFFFFF7E6),
-                iconColor: Colors.orange,
-              ),
-              _buildDivider(),
-              _buildSwitchTile(
-                Icons.alternate_email,
-                'Email Updates',
-                emailUpdates,
-                (val) => _updatePreference(
-                  field: 'emailUpdates',
-                  value: val,
-                  updateLocal: () => setState(() => emailUpdates = val),
-                ),
-                iconBg: const Color(0xFFE8EAF6),
-                iconColor: const Color(0xFF4B56D2),
-              ),
-              _buildDivider(),
-              _buildNavigationTile(
-                Icons.lock_outline,
-                'Change Password',
-                onTap: _handleChangePassword,
-                iconBg: const Color(0xFFE6F7ED),
-                iconColor: Colors.green,
-              ),
-            ]),
-            const SizedBox(height: 48),
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: OutlinedButton.icon(
-                onPressed: _isSaving ? null : _handleLogout,
-                icon: const Icon(Icons.logout, color: Color(0xFFE57373)),
-                label: const Text(
-                  'Logout',
-                  style: TextStyle(color: Color(0xFFE57373), fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-                style: OutlinedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  side: const BorderSide(color: Color(0xFFFEE7E7)),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'COACHING PRO V2.4.0',
-              style: TextStyle(color: Colors.grey, fontSize: 10, letterSpacing: 1.2),
-            ),
-            const SizedBox(height: 30),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildSectionTitle(String title) {
+  Widget _buildSectionHeader(String title) {
     return Align(
       alignment: Alignment.centerLeft,
       child: Padding(
@@ -340,7 +452,7 @@ class _SettingsPageState extends State<SettingsPage> {
         child: Text(
           title,
           style: const TextStyle(
-            fontSize: 12,
+            fontSize: 11,
             fontWeight: FontWeight.bold,
             color: Colors.grey,
             letterSpacing: 1.2,
@@ -350,7 +462,7 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _buildInfoCard(List<Widget> children) {
+  Widget _buildCardWrapper(List<Widget> children) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -381,7 +493,10 @@ class _SettingsPageState extends State<SettingsPage> {
         child: Icon(icon, color: const Color(0xFF4B56D2), size: 20),
       ),
       title: Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold)),
-      subtitle: Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black)),
+      subtitle: Text(
+        value,
+        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black),
+      ),
       trailing: isVerified
           ? Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -421,7 +536,7 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _buildNavigationTile(
+  Widget _buildNavTile(
     IconData icon,
     String title, {
     required VoidCallback onTap,

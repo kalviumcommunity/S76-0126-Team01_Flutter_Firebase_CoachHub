@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:s76_0126_team01_flutter_firebase_coachhub/features/classroom/presentation/pages/notifications_page.dart';
+import 'package:s76_0126_team01_flutter_firebase_coachhub/features/profile/presentation/pages/settings_page.dart';
 
 class TeacherHomePage extends StatelessWidget {
   const TeacherHomePage({super.key});
@@ -13,7 +15,7 @@ class TeacherHomePage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildHeader(),
+              _buildHeader(context),
               const SizedBox(height: 24),
               _buildStatsRow(),
               const SizedBox(height: 28),
@@ -54,7 +56,7 @@ class TeacherHomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -76,10 +78,30 @@ class TeacherHomePage extends StatelessWidget {
             ),
           ],
         ),
-        CircleAvatar(
-          radius: 24,
-          backgroundColor: const Color(0xFFE8EAF6),
-          child: const Icon(Icons.person, color: Color(0xFF4B56D2), size: 28),
+        Row(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.notifications_none_outlined, size: 28),
+              color: const Color(0xFF1A1A2E),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const NotificationsPage()),
+                );
+              },
+            ),
+            const SizedBox(width: 6),
+            IconButton(
+              icon: const Icon(Icons.settings_outlined, size: 28),
+              color: const Color(0xFF1A1A2E),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SettingsPage()),
+                );
+              },
+            ),
+          ],
         ),
       ],
     );

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:s76_0126_team01_flutter_firebase_coachhub/features/classroom/presentation/pages/notifications_page.dart';
+import 'package:s76_0126_team01_flutter_firebase_coachhub/features/profile/presentation/pages/settings_page.dart';
 
 class StudentHomePage extends StatefulWidget {
   const StudentHomePage({super.key});
@@ -107,7 +109,12 @@ class _StudentHomePageState extends State<StudentHomePage> {
                 IconButton(
                   icon: const Icon(Icons.notifications_none_outlined, size: 28),
                   color: _textDark,
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const NotificationsPage()),
+                    );
+                  },
                 ),
                 Positioned(
                   top: 10,
@@ -125,16 +132,15 @@ class _StudentHomePageState extends State<StudentHomePage> {
               ],
             ),
             const SizedBox(width: 8),
-            Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFFE8E8E8), width: 2),
-              ),
-              child: const CircleAvatar(
-                radius: 20,
-                backgroundColor: Color(0xFFFDE8D7),
-                child: Icon(Icons.person, color: Color(0xFF4A5568)),
-              ),
+            IconButton(
+              icon: const Icon(Icons.settings_outlined, size: 26),
+              color: _textDark,
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SettingsPage()),
+                );
+              },
             ),
           ],
         ),

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:s76_0126_team01_flutter_firebase_coachhub/features/home/presentation/pages/student_home_page.dart';
 import 'package:s76_0126_team01_flutter_firebase_coachhub/features/classroom/presentation/pages/your_assignments_page.dart';
 import 'package:s76_0126_team01_flutter_firebase_coachhub/features/classroom/presentation/pages/student_courses_page.dart';
-import 'package:s76_0126_team01_flutter_firebase_coachhub/features/profile/presentation/pages/settings_page.dart';
+import 'package:s76_0126_team01_flutter_firebase_coachhub/features/profile/presentation/pages/profile_page.dart';
 
 class StudentMainScreen extends StatefulWidget {
   const StudentMainScreen({super.key});
@@ -21,7 +21,7 @@ class _StudentMainScreenState extends State<StudentMainScreen> {
     const StudentHomePage(),     // Index 0: Home
     const StudentTasksPage(),    // Index 1: Tasks
     const StudentCoursesPage(),  // Index 2: Courses
-    const SettingsPage(),        // Index 3: Profile
+    const ProfilePage(),        // Index 3: Profile
   ];
 
   @override

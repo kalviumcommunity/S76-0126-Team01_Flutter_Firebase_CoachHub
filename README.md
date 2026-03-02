@@ -1,103 +1,86 @@
-🚀 Coachub – Smart Learning Platform
-🎓 Flutter × Firebase Powered Education Ecosystem
-<p align="center"> <img src="https://img.shields.io/badge/Flutter-3.x-blue?style=for-the-badge&logo=flutter" /> <img src="https://img.shields.io/badge/Firebase-Backend-orange?style=for-the-badge&logo=firebase" /> <img src="https://img.shields.io/badge/Platform-Android%20%7C%20iOS-green?style=for-the-badge" /> <img src="https://img.shields.io/badge/Status-Active-success?style=for-the-badge" /> </p> <p align="center"> <b>Coachub</b> is a role-based learning platform that connects Teachers and Students through a clean, scalable, and real-time mobile experience. </p>
-✨ Overview
+<!-- Animated Typing Header -->
+<p align="center">
+  <img src="https://readme-typing-svg.herokuapp.com?font=Poppins&size=28&duration=3000&color=4CAF50&center=true&vCenter=true&width=600&lines=Coachub+🚀;Smart+Learning+Platform;Flutter+×+Firebase+Ecosystem" />
+</p>
 
-Coachub is built using Flutter for cross-platform UI and Firebase for scalable backend services.
+<p align="center">
+  <b>🎓 Empowering the next generation through role-based connectivity.</b>
+</p>
 
-It provides:
+---
 
-👨‍🏫 Role-based authentication (Teacher / Student)
+<p align="center">
+  <img src="https://img.shields.io/badge/Flutter-3.x-blue?style=for-the-badge&logo=flutter" />
+  <img src="https://img.shields.io/badge/Firebase-Backend-orange?style=for-the-badge&logo=firebase" />
+  <img src="https://img.shields.io/badge/Platform-Android%20%7C%20iOS-green?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Status-Active-success?style=for-the-badge" />
+</p>
 
-🔐 Secure Firebase Authentication
+---
 
-⚡ Real-time database integration
+# ✨ Overview
 
-🧭 Structured navigation with Named Routes
+Coachub is a sophisticated **Flutter-based mobile application** designed to bridge the gap between **Teachers** and **Students**.
 
-📱 High-fidelity modern UI
+Built with a **modular architecture** and powered by **Firebase services**, it delivers a seamless, scalable, and real-time educational ecosystem.
 
-🧱 Modular and scalable codebase
+---
 
-🔐 Authentication Flow
-🎨 High-Fidelity Login & Sign Up
+# 🚀 Key Features
 
-Pixel-aligned UI implementation
+| Feature | Description |
+|----------|------------|
+| 🔐 Secure Authentication | Role-based login & sign-up powered by Firebase Auth |
+| ⚡ Real-Time Database | Live streaming via Cloud Firestore |
+| 🧭 Dynamic Routing | Centralized Named Routes inside `main.dart` |
+| 🎨 High-Fidelity UI | Pixel-aligned layouts with smooth animations |
+| 📊 Role-Based Dashboards | Separate Teacher & Student views |
 
-Clean form validation
+---
 
-Smooth navigation transitions
+# 🛠 Tech Stack
 
-👥 Role Selection Logic
+<p align="center">
 
-Dynamic onboarding based on:
+| Component | Technology | Purpose |
+|------------|------------|----------|
+| 🎨 Frontend | Flutter (Dart) | Cross-platform UI rendering |
+| ☁ Backend | Firebase | Scalable cloud infrastructure |
+| 🔐 Authentication | Firebase Auth | Secure identity management |
+| 📂 Database | Cloud Firestore | Real-time NoSQL storage |
+| 🧭 Navigation | Named Routes | Structured app flow |
 
-Teacher
+</p>
 
-Student
+---
 
-Conditional dashboard routing
+# 🔐 Authentication Flow
 
-Role-driven user experience
+Coachub follows a **Dual-Pathway Logic System** to ensure users land on the correct dashboard instantly after login.
 
-🧭 Navigation Configuration
+### 👥 Role Selection
+- Teacher  
+- Student  
 
-Centralized Named Routes in main.dart
+### 📁 Data Persistence
+User role is stored in a `users` collection in Firestore.
 
-Clean and scalable routing logic
+### 🔄 Auth Wrapper
+An `AuthCheck` widget listens to authentication state changes and routes users dynamically.
 
-Seamless transitions between authentication screens
+---
 
-Navigation bug fixes for stable user flow
+# 📦 Installation
 
-🛠 Tech Stack
-Layer	Technology
-Frontend	Flutter
-Backend	Firebase
-Auth	Firebase Authentication
-Database	Cloud Firestore
-Routing	Named Routes
-Architecture	Modular Structure
-⚡ Key Features
-
-🔐 Secure Authentication
-
-👨‍🏫 Teacher Dashboard
-
-🎓 Student Dashboard
-
-📊 Role-based access control
-
-🚀 Smooth and intuitive UI
-
-📱 Cross-platform compatibility
-
-🔄 Scalable navigation system
-
-📦 Installation
+```bash
+# Clone the repository
 git clone https://github.com/yourusername/coachub.git
+
+# Navigate into project
 cd coachub
+
+# Install dependencies
 flutter pub get
+
+# Run application
 flutter run
-
-🔥 Future Enhancements
-
-📹 Live class integration
-
-💬 Real-time chat system
-
-📈 Performance analytics dashboard
-
-🌐 Multi-language support
-
-🎯 Advanced onboarding animations
-
-🔔 Push notifications
-
-🌟 Support the Project
-
-If you find this project valuable:
-
-⭐ Star the repository
-🍴 Fork it
-📢 Share it
